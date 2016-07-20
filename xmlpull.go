@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -72,7 +73,15 @@ type Text struct {
 	Tag  *Tag
 }
 
-func (t *Text) AsBoolean() bool {
+func (t *Text) IsTag(space, local int) bool {
+	return t.Tag != nil && t.Tag.IsTag(space, local)
+}
+
+func (t *Text) IsParentTag(space, local int) bool {
+	return t.Tag != nil && t.Tag.IsParentTag(space, local)
+}
+
+func (t *Text) AsBool() bool {
 	return strings.EqualFold(t.Text, "true")
 }
 
@@ -100,8 +109,10 @@ func (x *parserImpl) GetAtoms() Atoms {
 func (x *parserImpl) NextToken() (Token, error) {
 	for {
 		t, err := x.decoder.Token()
-		if err != nil {
+		if err != nil && err != io.EOF {
 			return nil, err
+		} else if t == nil {
+			return nil, nil
 		}
 
 		switch se := t.(type) {
